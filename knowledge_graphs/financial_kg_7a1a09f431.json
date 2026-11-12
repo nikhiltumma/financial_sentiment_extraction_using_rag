@@ -1,0 +1,82 @@
+{
+  "generation_status": "success",
+  "cluster_count": 1,
+  "graph_count": 1,
+  "graphs": [
+    {
+      "entities": [
+        {
+          "name": "Surya Technologies Limited",
+          "type": "Company",
+          "attributes": {
+            "revenue": "1180 करोड़ रुपये",
+            "profit": "145 करोड़ रुपये",
+            "growth_rate": "18 प्रतिशत"
+          },
+          "sentiment": "Bullish"
+        },
+        {
+          "name": "India",
+          "type": "Country",
+          "attributes": {
+            "revenue": "1000 करोड़ रुपये"
+          },
+          "sentiment": "Neutral"
+        },
+        {
+          "name": "Cloud Services",
+          "type": "Service",
+          "attributes": {
+            "revenue_growth": "24 प्रतिशत"
+          },
+          "sentiment": "Bullish"
+        },
+        {
+          "name": "Operating Margin",
+          "type": "Metric",
+          "attributes": {
+            "current_value": "17.5 प्रतिशत",
+            "previous_value": "18 प्रतिशत"
+          },
+          "sentiment": "Bearish"
+        }
+      ],
+      "relations": [
+        {
+          "source": "Surya Technologies Limited",
+          "target": "India",
+          "type": "Revenue Source",
+          "sentiment": "Bullish",
+          "distance": 1,
+          "evidence": "सूर्या टेक्नोलॉजीज़ लिमिटेड ने वित्त वर्ष 2025-26 की चौथी तिमाही में कुल राजस्व 1000 करोड़ रुपये से बढ़ाकर 1180 करोड़ रुपये किया।"
+        },
+        {
+          "source": "Surya Technologies Limited",
+          "target": "Cloud Services",
+          "type": "Revenue Growth",
+          "sentiment": "Bullish",
+          "distance": 1,
+          "evidence": "क्लाउड सेवाओं से आय में 24 प्रतिशत की वृद्धि हुई।"
+        },
+        {
+          "source": "Surya Technologies Limited",
+          "target": "Operating Margin",
+          "type": "Margin Change",
+          "sentiment": "Bearish",
+          "distance": 1,
+          "evidence": "परिचालन मार्जिन 18 प्रतिशत से घटकर 17.5 प्रतिशत हो गया।"
+        }
+      ],
+      "sentiment_label": "Bullish",
+      "source_documents": [
+        {
+          "document_id": "hindi_test_001",
+          "source_name": "hindi_financial_sample_report.pdf",
+          "language": "hi"
+        }
+      ],
+      "graph_id": "kg_7520dcb1fcfd",
+      "merged_text": "सूर्या टेक्नोलॉजीज़ लिमिटेड ने वित्त वर्ष 2025-26 की चौथी तिमाही में कुल राजस्व 1000 करोड़ रुपये से बढ़ाकर 1180 करोड़ रुपये किया। राजस्व में 18 प्रतिशत की वृद्धि हुई। शुद्ध लाभ 120 करोड़ रुपये से बढ़कर 145 करोड़ रुपये हो गया। क्लाउड सेवाओं से आय में 24 प्रतिशत की वृद्धि हुई। कर्मचारी लागत और तकनीकी अवसंरचना पर अधिक खर्च के कारण परिचालन मार्जिन 18 प्रतिशत से घटकर 17.5 प्रतिशत हो गया। कंपनी को अगले वित्त वर्ष में 12 से 15 प्रतिशत राजस्व वृद्धि की उम्मीद है।"
+    }
+  ]
+}

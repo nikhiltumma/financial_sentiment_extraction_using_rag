@@ -2,6 +2,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import requests
+from app.api.analysis import router as analysis_router
+from app.api.graph import router as graph_router
+
+
 
 from app.config import OLLAMA_BASE_URL, OLLAMA_MODEL
 
@@ -10,6 +14,10 @@ app = FastAPI(
     description="Multilingual Financial Sentiment Extraction using Knowledge Graphs and RAG",
     version="1.0.0"
 )
+
+app.include_router(analysis_router)
+app.include_router(graph_router)
+
 
 # Allow React frontend to communicate with FastAPI
 app.add_middleware(

@@ -1,0 +1,75 @@
+{
+  "generation_status": "success",
+  "cluster_count": 2,
+  "graph_count": 2,
+  "graphs": [
+    {
+      "entities": [
+        {
+          "name": "ABC Technologies",
+          "type": "Company",
+          "attributes": {
+            "revenue_growth": "18%",
+            "net_profit": "145 crore",
+            "operating_margin": "17.5%"
+          },
+          "sentiment": "Neutral"
+        },
+        {
+          "name": "Q4",
+          "type": "Quarter",
+          "attributes": {
+            "revenue_growth": "18%",
+            "net_profit": "145 crore"
+          },
+          "sentiment": "Neutral"
+        }
+      ],
+      "relations": [
+        {
+          "source": "ABC Technologies",
+          "target": "Q4",
+          "type": "Financial Period",
+          "sentiment": "Neutral",
+          "distance": 1,
+          "evidence": "ABC Technologies reported revenue growth of 18% in Q4."
+        }
+      ],
+      "sentiment_label": "Bullish",
+      "source_documents": [
+        {
+          "document_id": "financial_001",
+          "source_name": "sample_report",
+          "language": "en"
+        }
+      ],
+      "graph_id": "kg_1712b4ff513f",
+      "merged_text": "ABC Technologies reported revenue growth of 18% in Q4. Net profit increased from 120 crore to 145 crore. However, operating margins declined from 18% to 17.5% due to higher infrastructure costs."
+    },
+    {
+      "entities": [
+        {
+          "name": "ABC Technologies",
+          "type": "Company",
+          "attributes": {
+            "revenue growth": "12-15%",
+            "operating expenses": "rising",
+            "margins": "declining"
+          },
+          "sentiment": "Bearish"
+        }
+      ],
+      "relations": [],
+      "sentiment_label": "Bearish",
+      "source_documents": [
+        {
+          "document_id": "financial_002",
+          "source_name": "market_news",
+          "language": "en"
+        }
+      ],
+      "graph_id": "kg_2f35c55f53e0",
+      "merged_text": "ABC Technologies expects revenue growth of 12% to 15% next year. Investors expressed concerns about rising operating expenses and declining margins."
+    }
+  ]
+}
