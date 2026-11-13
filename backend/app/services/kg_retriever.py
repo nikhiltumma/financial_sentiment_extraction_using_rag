@@ -1,3 +1,4 @@
+
 import json
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,7 @@ class KGRetriever:
 
     def __init__(self):
         print("Loading multilingual embedding model...")
+
         self.model = SentenceTransformer(MODEL_NAME)
         self.index = None
         self.evidence = []
@@ -67,7 +69,7 @@ class KGRetriever:
                 f"{json.dumps(source_attributes, ensure_ascii=False)}. "
                 f"Target attributes: "
                 f"{json.dumps(target_attributes, ensure_ascii=False)}. "
-                f"Evidence: {evidence_text}"
+                f"Evidence: {evidence_text}. "
                 f"Original context: {merged_text}"
             )
 
@@ -81,6 +83,7 @@ class KGRetriever:
                     "target": target_attributes
                 },
                 "sentiment_label": sentiment,
+                "graph_sentiment_label": sentiment,
                 "graph_id": graph_id,
                 "source_documents": source_documents
             })
@@ -97,7 +100,7 @@ class KGRetriever:
                 sentence = (
                     f"{name} has the following financial information: "
                     f"{json.dumps(attributes, ensure_ascii=False)}. "
-                    f"Entity sentiment: {entity_sentiment}"
+                    f"Entity sentiment: {entity_sentiment}. "
                     f"Original context: {merged_text}"
                 )
 
@@ -108,6 +111,7 @@ class KGRetriever:
                     "relation": "entity_attributes",
                     "attributes": attributes,
                     "sentiment_label": entity_sentiment,
+                    "graph_sentiment_label": entity_sentiment,
                     "graph_id": graph_id,
                     "source_documents": source_documents
                 })
@@ -253,7 +257,6 @@ class KGRetriever:
         )
 
         # Search all records when company filtering is requested.
-        # This prevents unrelated records from occupying top_k slots.
         search_k = (
             self.index.ntotal
             if company

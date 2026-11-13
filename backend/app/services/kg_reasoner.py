@@ -5,7 +5,9 @@ from app.services.ollama_client import generate_json
 
 
 def format_evidence(evidence: list[dict]) -> str:
-    """Format retrieved KG evidence without losing original context."""
+    """Format KG evidence while distinguishing graph sentiment
+    from the sentiment of individual financial facts.
+    """
 
     if not evidence:
         return "No evidence was retrieved."
@@ -13,16 +15,34 @@ def format_evidence(evidence: list[dict]) -> str:
     evidence_blocks = []
 
     for index, item in enumerate(evidence, start=1):
+
+        graph_sentiment = item.get(
+            "graph_sentiment_label",
+            item.get("sentiment_label", "Unknown")
+        )
+
         evidence_blocks.append(
             f"""
 Evidence {index}:
-Text: {item.get('text', '')}
+
+Financial Evidence:
+{item.get('text', '')}
+
 Source: {item.get('source', 'Unknown')}
 Target: {item.get('target', 'Unknown')}
 Relationship: {item.get('relation', 'Unknown')}
-Sentiment label: {item.get('sentiment_label', 'Unknown')}
+
+Original Graph Sentiment Label: {graph_sentiment}
+
 Graph ID: {item.get('graph_id', 'Unknown')}
-Expansion type: {item.get('expansion_type', 'Unknown')}
+Expansion Type: {item.get('expansion_type', 'Unknown')}
+
+IMPORTANT:
+The sentiment label above represents the original
+knowledge graph's overall sentiment classification.
+It is metadata, not proof that every financial fact
+in this evidence has the same sentiment.
+Evaluate the underlying financial facts independently.
 """
         )
 
@@ -169,6 +189,7 @@ def has_explicit_causal_evidence(
     return False
 
 
+
 def check_evidence_sufficiency(
     query: str,
     evidence: list[dict]
@@ -176,8 +197,8 @@ def check_evidence_sufficiency(
     """
     Determine whether retrieved evidence can answer the question.
 
-    First checks for explicit causal evidence.
-    Uses the LLM for other sufficiency decisions.
+    Uses deterministic causal checking first, followed by
+    LLM evaluation when required.
     """
 
     if not evidence:
@@ -188,7 +209,6 @@ def check_evidence_sufficiency(
 
     # Step 1: Deterministic causal evidence check
     if has_explicit_causal_evidence(query, evidence):
-
         return {
             "sufficient": True,
             "justification": (
@@ -197,7 +217,7 @@ def check_evidence_sufficiency(
             )
         }
 
-    # Step 2: LLM evaluation for other questions
+    # Step 2: LLM evaluation
     evidence_text = format_evidence(evidence)
 
     prompt = f"""
@@ -224,6 +244,7 @@ RULES:
    represented as a graph relationship.
 8. Mark sufficient only when the evidence answers
    the actual question.
+9. Graph sentiment labels are metadata, not financial facts.
 
 Return valid JSON only:
 
@@ -233,19 +254,38 @@ Return valid JSON only:
 }}
 """
 
-    result = generate_json(prompt)
+    try:
+        result = generate_json(prompt)
 
-    sufficient = result.get("sufficient")
+        sufficient = result.get("sufficient")
 
-    if not isinstance(sufficient, bool):
-        raise ValueError(
-            "LLM returned an invalid sufficiency value."
-        )
+        if not isinstance(sufficient, bool):
+            raise ValueError(
+                "LLM returned an invalid sufficiency value."
+            )
 
-    return {
-        "sufficient": sufficient,
-        "justification": result.get("justification", "")
-    }
+        justification = result.get("justification", "")
+
+        if not isinstance(justification, str):
+            justification = ""
+
+        return {
+            "sufficient": sufficient,
+            "justification": justification
+        }
+
+    except Exception as error:
+        # Fail safely: do not claim evidence is sufficient
+        # when the LLM evaluation could not be completed.
+        return {
+            "sufficient": False,
+            "justification": (
+                "LLM evidence evaluation failed. "
+                "Evidence sufficiency could not be verified. "
+                f"Reason: {str(error)}"
+            )
+        }
+
 
 
 def answer_financial_question(
@@ -310,6 +350,8 @@ Return valid JSON only:
     }
 
 
+
+
 def classify_financial_sentiment(
     query: str,
     evidence: list[dict]
@@ -317,8 +359,8 @@ def classify_financial_sentiment(
     """
     Classify financial sentiment using retrieved evidence.
 
-    Considers positive and negative financial signals,
-    including original document context.
+    Evaluates actual financial signals independently of
+    original knowledge graph sentiment labels.
     """
 
     evidence_text = format_evidence(evidence)
@@ -336,27 +378,77 @@ KNOWLEDGE GRAPH EVIDENCE:
 {evidence_text}
 
 CLASSIFICATION LABELS:
-
 0 = Bearish
 1 = Bullish
 2 = Neutral
 
-IMPORTANT RULES:
+IMPORTANT CLASSIFICATION RULES:
 
 1. Use only the supplied evidence.
 2. Read structured graph facts and original context.
-3. Do not blindly trust graph sentiment labels.
-4. Consider positive and negative financial signals.
-5. Revenue growth alone does not automatically mean Bullish.
-6. Increasing net profit is generally a positive signal.
-7. Declining operating margins are generally negative.
-8. Increasing operating costs may be negative.
-9. Consider explicit causal explanations.
-10. If positive and negative signals are balanced, use Neutral.
-11. If negative signals clearly dominate, use Bearish.
-12. If positive signals clearly dominate, use Bullish.
-13. Do not invent financial numbers or explanations.
-14. Explain why the evidence supports the classification.
+3. Consider all relevant positive and negative financial signals.
+4. Revenue growth alone does not automatically mean Bullish.
+5. Increasing net profit is generally a positive signal.
+6. Declining operating margins are generally negative.
+7. Increasing operating costs may be negative.
+8. Consider explicit causal explanations.
+9. If positive and negative signals are balanced, use Neutral.
+10. If negative signals clearly dominate, use Bearish.
+11. If positive signals clearly dominate, use Bullish.
+12. Do not invent financial numbers or explanations.
+
+GRAPH SENTIMENT CONFLICT HANDLING — CRITICAL:
+
+1. Original Graph Sentiment Labels are metadata, not verified
+   financial facts.
+2. Never use a graph sentiment label as direct evidence
+   for classifying the company's financial performance.
+3. Never assume that every fact in a Bullish graph is positive.
+4. Never assume that every fact in a Bearish graph is negative.
+5. Evaluate the actual financial facts in each evidence record.
+6. If different graphs have conflicting sentiment labels,
+   independently inspect the financial facts from each graph.
+7. A graph labelled Bullish may contain negative financial signals.
+8. A graph labelled Bearish may contain positive financial signals.
+9. Do not count graph sentiment labels as additional positive
+   or negative signals.
+10. Base the final classification on the combined financial
+    evidence, not on the majority of graph sentiment labels.
+11. If evidence from different graphs contradicts each other,
+    acknowledge the contradiction and explain how it affects
+    the final classification.
+12. Do not resolve a conflict by automatically preferring
+    the latest retrieved graph or the graph with more records.
+
+NUMERICAL ACCURACY RULES — VERY IMPORTANT:
+
+1. Carefully inspect every numerical comparison in the evidence.
+2. Preserve the exact original values and their order.
+3. If a value changes from 18% to 17.5%, describe it as a
+   decrease from 18% to 17.5%.
+4. If a value changes from 120 crore to 145 crore,
+   describe it as an increase from 120 crore to 145 crore.
+5. Never reverse the direction of an increase or decrease.
+6. Do not assume a previous value unless it is explicitly
+   available in the evidence.
+7. Do not confuse the current value with the previous value.
+8. If the direction of a change cannot be established,
+   describe only the available value without claiming an increase
+   or decrease.
+9. Before returning the reasoning, verify every numerical
+   comparison against the original evidence.
+
+POSITIVE AND NEGATIVE SIGNAL ACCOUNTING:
+
+1. Identify every relevant positive financial signal.
+2. Identify every relevant negative financial signal.
+3. Do not omit revenue growth when it appears in the evidence.
+4. Do not describe one signal as the only positive or negative
+   signal unless all retrieved evidence supports that statement.
+5. Explicitly acknowledge mixed financial performance.
+6. Explain why the negative or positive signals dominate.
+7. Do not count the same financial fact multiple times merely
+   because it appears in different evidence records.
 
 IMPORTANT DISTINCTION:
 
@@ -375,6 +467,9 @@ SUPPORTING EVIDENCE RULES:
 3. Do not return dictionaries or objects.
 4. Do not return empty strings, symbols, or fragments.
 5. Return supporting statements when evidence exists.
+6. Include relevant positive and negative evidence.
+7. Do not treat graph sentiment labels as supporting
+   financial evidence.
 
 Return valid JSON only:
 
@@ -401,9 +496,7 @@ Return valid JSON only:
     label = result.get("label")
 
     if sentiment not in sentiment_labels:
-        raise ValueError(
-            "Invalid sentiment returned by LLM."
-        )
+        raise ValueError("Invalid sentiment returned by LLM.")
 
     if label != sentiment_labels[sentiment]:
         raise ValueError(
@@ -433,13 +526,19 @@ Return valid JSON only:
     }
 
 
+
+
+
 def classify_with_fallback(
     query: str,
     evidence: list[dict]
 ) -> dict:
     """
     Generate a fallback classification when KG evidence
-    is insufficient. Disclose the lack of KG support.
+    is insufficient.
+
+    If the LLM is unavailable or returns invalid output,
+    return a controlled Neutral classification.
     """
 
     evidence_summary = format_evidence(evidence)
@@ -465,6 +564,7 @@ RULES:
 5. If available signals are mixed or inconclusive, use Neutral.
 6. Distinguish general financial interpretation from
    evidence-supported conclusions.
+7. Graph sentiment labels are metadata, not financial facts.
 
 LABELS:
 
@@ -483,33 +583,60 @@ Return valid JSON only:
 }}
 """
 
-    result = generate_json(prompt)
-
     labels = {
         "Bearish": 0,
         "Bullish": 1,
         "Neutral": 2
     }
 
-    sentiment = result.get("sentiment")
+    try:
+        result = generate_json(prompt)
 
-    if sentiment not in labels:
-        raise ValueError(
-            "Invalid fallback sentiment."
-        )
+        sentiment = result.get("sentiment")
+        label = result.get("label")
 
-    if result.get("label") != labels[sentiment]:
-        raise ValueError(
-            "Fallback sentiment label mismatch."
-        )
+        if sentiment not in labels:
+            raise ValueError("Invalid fallback sentiment.")
 
-    return {
-        "sentiment": sentiment,
-        "label": labels[sentiment],
-        "reasoning": result.get("reasoning", ""),
-        "kg_evidence_supported": False,
-        "disclaimer": (
-            "This classification is not supported by "
-            "sufficient knowledge graph evidence."
-        )
-    }
+        if label != labels[sentiment]:
+            raise ValueError(
+                "Fallback sentiment label mismatch."
+            )
+
+        reasoning = result.get("reasoning", "")
+
+        if not isinstance(reasoning, str) or not reasoning.strip():
+            reasoning = (
+                "The available knowledge graph evidence "
+                "is insufficient for a reliable conclusion."
+            )
+
+        return {
+            "sentiment": sentiment,
+            "label": labels[sentiment],
+            "reasoning": reasoning,
+            "kg_evidence_supported": False,
+            "disclaimer": (
+                "This classification is not supported by "
+                "sufficient knowledge graph evidence."
+            )
+        }
+
+    except Exception:
+        # Deterministic fallback when LLM generation fails
+        return {
+            "sentiment": "Neutral",
+            "label": 2,
+            "reasoning": (
+                "The available evidence is insufficient, "
+                "and the LLM fallback service could not "
+                "complete the classification."
+            ),
+            "kg_evidence_supported": False,
+            "disclaimer": (
+                "This is a default Neutral fallback because "
+                "sufficient evidence or LLM classification "
+                "was unavailable."
+            )
+        }
+

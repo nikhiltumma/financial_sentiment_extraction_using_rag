@@ -1,7 +1,7 @@
-
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel, Field
 from typing import Literal
+import re
 
 from app.services.kg_retriever import KGRetriever
 
@@ -89,16 +89,68 @@ class FinancialQueryRequest(BaseModel):
 # Reuse the embedding model and FAISS index
 retriever = KGRetriever()
 
+def detect_company(query: str) -> str:
+    """
+    Identify a company explicitly mentioned in the query
+    using company names available in the knowledge graph.
+    """
+
+    if retriever.index is None:
+        retriever.load_index()
+
+    company_names = {
+        str(item.get("source", "")).strip()
+        for item in retriever.evidence
+        if item.get("source")
+    }
+
+    query_lower = query.casefold()
+
+    matched_companies = [
+        company
+        for company in company_names
+        if re.search(
+            r"(?<!\w)" + re.escape(company) + r"(?!\w)",
+            query,
+            re.IGNORECASE
+        )
+    ]
+
+    if not matched_companies:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No matching company was found in your query. "
+                "Please mention a company available in the knowledge graph."
+            )
+        )
+
+    # Prefer the longest matching company name
+    matched_companies.sort(key=len, reverse=True)
+
+    if (
+        len(matched_companies) > 1
+        and len(matched_companies[0]) == len(matched_companies[1])
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Multiple company matches found. Please clarify your query."
+        )
+
+    return matched_companies[0]
+
 
 @router.post("/query")
 def analyze_financial_query(request: FinancialQueryRequest):
 
     try:
         # 1. Retrieve relevant graph evidence
+        company = detect_company(request.query)
+
         initial_evidence = retriever.search(
             query=request.query,
             top_k=request.top_k,
-            company="ABC Technologies"
+            company=company
         )
 
         if not initial_evidence:
@@ -151,6 +203,8 @@ def analyze_financial_query(request: FinancialQueryRequest):
         return {
             "status": "success",
             "query": request.query,
+
+            "detected_company": company,
 
             "classification_source": classification_source,
 

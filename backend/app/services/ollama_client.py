@@ -27,32 +27,77 @@ def generate_response(prompt: str, json_mode: bool = False) -> str:
             json=payload,
             timeout=180
         )
+
         response.raise_for_status()
 
-        return response.json().get("response", "")
+        data = response.json()
+        output = data.get("response", "")
+
+        if not isinstance(output, str) or not output.strip():
+            raise RuntimeError("Ollama returned an empty response.")
+
+        return output.strip()
+
+    except requests.Timeout as error:
+        raise RuntimeError(
+            f"Ollama request timed out: {error}"
+        ) from error
+
+    except requests.ConnectionError as error:
+        raise RuntimeError(
+            f"Cannot connect to Ollama at {OLLAMA_BASE_URL}. "
+            "Check whether the Ollama server is running."
+        ) from error
+
+    except requests.HTTPError as error:
+        raise RuntimeError(
+            f"Ollama returned an HTTP error: {error}"
+        ) from error
 
     except requests.RequestException as error:
-        raise RuntimeError(f"Ollama request failed: {error}")
+        raise RuntimeError(
+            f"Ollama request failed: {error}"
+        ) from error
+
+    except (ValueError, AttributeError) as error:
+        raise RuntimeError(
+            f"Ollama returned an invalid API response: {error}"
+        ) from error
 
 
 def generate_json(prompt: str) -> dict:
-    """Generate and parse JSON from Ollama."""
+    """Generate, clean, and validate JSON returned by Ollama."""
 
     output = generate_response(prompt, json_mode=True)
 
+    if not output:
+        raise ValueError("Ollama returned an empty JSON response.")
+
     try:
-        return json.loads(output)
+        result = json.loads(output)
+
     except json.JSONDecodeError:
-        # Handle models that wrap JSON in Markdown fences.
+        # Handle JSON wrapped in Markdown code fences.
         cleaned = re.sub(
             r"^```(?:json)?\s*|\s*```$",
             "",
             output.strip(),
             flags=re.IGNORECASE
         )
+
         try:
-            return json.loads(cleaned)
+            result = json.loads(cleaned)
+
         except json.JSONDecodeError as error:
             raise ValueError(
                 f"Ollama returned invalid JSON: {output[:500]}"
             ) from error
+
+    # The application expects a JSON object, not a list or scalar.
+    if not isinstance(result, dict):
+        raise ValueError(
+            "Ollama returned valid JSON, but the response "
+            "must be a JSON object (dictionary)."
+        )
+
+    return result
