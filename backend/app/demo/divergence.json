@@ -1,0 +1,42 @@
+{
+  "id": "div_meridian_guidance",
+  "title": "Meridian Grid trims FY26 guidance after tariff order deferred",
+  "summary": "The state regulator has not notified the transmission tariff order, so Meridian Grid Infrastructure cut its FY26 revenue guidance to ₹8,900 crore and flagged margin pressure. Coverage in the three languages frames the delay differently.",
+  "note": "English and Telugu coverage treat the deferral as a margin problem; Hindi coverage calls it temporary and expects the order next quarter.",
+  "variants": [
+    {
+      "language": "en",
+      "label": "English",
+      "source": "Reuters · Energy Desk",
+      "sentiment": "Bearish",
+      "confidence": 0.84,
+      "text": "Meridian Grid Infrastructure cut its FY26 revenue guidance to ₹8,900 crore after the state regulator deferred the transmission tariff order. Management said margins will stay under pressure until the order is notified.",
+      "highlights": [
+        { "text": "cut its FY26 revenue guidance", "sentiment": "Bearish" },
+        { "text": "margins will stay under pressure", "sentiment": "Bearish" }
+      ]
+    },
+    {
+      "language": "hi",
+      "label": "Hindi",
+      "source": "वित्तीय समाचार · ऊर्जा",
+      "sentiment": "Neutral",
+      "confidence": 0.61,
+      "text": "मेरिडियन ग्रिड इंफ्रास्ट्रक्चर ने राज्य नियामक के ट्रांसमिशन टैरिफ आदेश को स्थगित किए जाने के बाद FY26 राजस्व अनुमान ₹8,900 करोड़ किया। कंपनी का कहना है कि स्थगन अस्थायी है और आदेश अगली तिमाही में जारी हो सकता है।",
+      "highlights": [
+        { "text": "स्थगन अस्थायी है", "sentiment": "Bullish" }
+      ]
+    },
+    {
+      "language": "te",
+      "label": "Telugu",
+      "source": "ఆర్థిక సమాచారం · ఇన్ఫ్రా",
+      "sentiment": "Bearish",
+      "confidence": 0.79,
+      "text": "రాష్ట్ర నియంత్రణ సంస్థ ట్రాన్స్మిషన్ టారిఫ్ ఆదేశాన్ని వాయిదా వేయడంతో మెరిడియన్ గ్రిడ్ FY26 ఆదాయ అంచనాను ₹8,900 కోట్లకు తగ్గించింది. రుణ భారం పెరగడంతో మార్జిన్లపై ఒత్తిడి కొనసాగుతుంది.",
+      "highlights": [
+        { "text": "మార్జిన్లపై ఒత్తిడి", "sentiment": "Bearish" }
+      ]
+    }
+  ]
+}

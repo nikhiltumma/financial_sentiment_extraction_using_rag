@@ -1,0 +1,43 @@
+:root {
+  /* Surfaces */
+  --bg: #07090d;
+  --surface: #0e1219;
+  --elevated: #141a24;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.16);
+
+  /* Type */
+  --text: #e8edf5;
+  --muted: #8a94a6;
+  --muted-dim: #5f6a7b;
+
+  /* Signal colours */
+  --accent: #5eead4;
+  --accent-soft: rgba(94, 234, 212, 0.12);
+  --pos: #34d399;
+  --pos-soft: rgba(52, 211, 153, 0.12);
+  --neg: #fb7185;
+  --neg-soft: rgba(251, 113, 133, 0.12);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.12);
+
+  /* Geometry */
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --rail: 84px;
+  --maxw: 1400px;
+
+  /* Spacing scale */
+  --s1: 8px;
+  --s2: 16px;
+  --s3: 24px;
+  --s4: 32px;
+  --s5: 48px;
+
+  /* Families */
+  --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  color-scheme: dark;
+}
