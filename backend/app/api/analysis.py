@@ -21,6 +21,47 @@ from app.services.kg_reasoner import (
 router = APIRouter(prefix="/analysis", tags=["Analysis"])
 
 
+@router.get("/index/status")
+def index_status():
+    """Return whether a FAISS index is available."""
+    from app.services.kg_retriever import VECTOR_DIR
+
+    index_path = VECTOR_DIR / "financial_kg.index"
+    evidence_path = VECTOR_DIR / "evidence.json"
+
+    has_index = index_path.exists() and evidence_path.exists()
+
+    return {
+        "indexed": has_index,
+        "index_path": str(index_path) if has_index else None,
+        "evidence_path": str(evidence_path) if has_index else None,
+        "evidence_count": 0 if not has_index else None,
+    }
+
+
+@router.post("/index/build")
+def build_index():
+    """Build the FAISS index from knowledge graphs."""
+    from app.services.kg_retriever import KGRetriever
+
+    retriever = KGRetriever()
+
+    try:
+        result = retriever.build_index()
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc)
+        )
+
+    return result
+
+
 class TextAnalysisRequest(BaseModel):
     text: str
     content_type: Literal[
