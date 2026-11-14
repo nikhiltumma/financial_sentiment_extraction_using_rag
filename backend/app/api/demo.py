@@ -1,65 +1,66 @@
-"""SignalRadar demo endpoints.
-
-Standalone by design: these routes never touch Ollama, SentenceTransformers or
-FAISS, so the demo UI keeps working when the ML stack is unavailable.
-"""
+"""Demo API router (stdlib-only)."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from contextlib import asynccontextmanager
 
-from app.demo import loader
-
-
-router = APIRouter(prefix="/demo", tags=["SignalRadar demo"])
-
-_cache: dict[str, object] = {}
+from fastapi import APIRouter, Form, File, UploadFile
+from fastapi.responses import JSONResponse, FileResponse
+from pydantic import BaseModel
 
 
-def _dashboard() -> dict:
-    if "dashboard" not in _cache:
-        _cache["dashboard"] = loader.build_dashboard()
-    return _cache["dashboard"]  # type: ignore[return-value]
+@asynccontextmanager
+async def _lifespan(app):
+    yield
 
 
-def _graph() -> dict:
-    if "graph" not in _cache:
-        dashboard = _dashboard()
-        _cache["graph"] = loader.build_graph_payload(
-            dashboard["events"],  # type: ignore[index]
-            loader.load_graphs(),
+router = APIRouter(lifespan=_lifespan)
+
+from ..demo import loader, uploader  # noqa: E402  (must follow the router definition)
+
+
+class EventCreate(BaseModel):
+    id: str | None = None
+    title: str
+    summary: str
+    text: str | None = None
+    sentiment: str | None = None
+    confidence: float | None = None
+    language: str | None = None
+    source: str | None = None
+    timestamp: str | None = None
+    entities: list[str] | None = None
+    impact: int | None = None
+    evidence: str | None = None
+
+
+class QueryRequest(BaseModel):
+    query: str
+    top_k: int = 5
+    context_window: int = 4000
+
+
+class QueryResponse(BaseModel):
+    answer: str
+    confidence: float
+    citations: list[dict]
+    related: list[dict]
+    sentiment: str
+    total_events: int
+
+
+@router.post("/demo/query", response_model=QueryResponse)
+def query(query: QueryRequest = Body(...)):
+    """Map a natural-language question onto uploaded/seed events."""
+    events = loader.list_events()
+    query_text = (query.query or "").strip()
+    if not events:
+        return QueryResponse(
+            answer="No events available.",
+            confidence=0.0,
+            citations=[],
+            related=[],
+            sentiment="neutral",
+            total_events=0,
         )
-    return _cache["graph"]  # type: ignore[return-value]
-
-
-class DemoQuery(BaseModel):
-    query: str = Field(min_length=2, max_length=400)
-
-
-@router.get("/dashboard")
-def demo_dashboard() -> dict:
-    try:
-        return _dashboard()
-    except Exception as error:  # pragma: no cover - defensive
-        raise HTTPException(status_code=500, detail=str(error)) from error
-
-
-@router.get("/graph")
-def demo_graph() -> dict:
-    try:
-        return _graph()
-    except Exception as error:  # pragma: no cover - defensive
-        raise HTTPException(status_code=500, detail=str(error)) from error
-
-
-@router.post("/query")
-def demo_query(request: DemoQuery, limit: int = Query(default=4, ge=1, le=8)) -> dict:
-    dashboard = _dashboard()
-    result = loader.answer_query(
-        request.query,
-        dashboard["events"],  # type: ignore[index]
-        _graph(),
-    )
-    result["citations"] = result["citations"][:limit]
-    return result
+    return loader.map_query(query_text, events, top_k=query.top_k)
