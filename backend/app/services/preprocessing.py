@@ -1,16 +1,13 @@
-
 import re
 import csv
 import io
 from pathlib import Path
 from datetime import datetime, timezone
 
-import fitz  # PyMuPDF
 import pandas as pd
 from docx import Document
-from langdetect import detect, DetectorFactory, LangDetectException
 
-DetectorFactory.seed = 0
+fitz = None  # PyMuPDF (optional; lazy-loaded inside extract_pdf)
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
@@ -39,7 +36,10 @@ def detect_language(text: str) -> dict:
         }
 
     try:
-        code = detect(text)
+        from langdetect import detect as _detect
+        from langdetect import DetectorFactory
+        DetectorFactory.seed = 0
+        code = _detect(text)
     except LangDetectException:
         code = "unknown"
 
@@ -53,6 +53,7 @@ def detect_language(text: str) -> dict:
 def extract_pdf(file_bytes: bytes) -> str:
     text_parts = []
 
+    import fitz  # PyMuPDF (lazy)
     with fitz.open(stream=file_bytes, filetype="pdf") as pdf:
         for page in pdf:
             text_parts.append(page.get_text())
@@ -111,7 +112,6 @@ def process_financial_content(
     source_name: str = "text_input",
     selected_language: str = "auto",
 ) -> dict:
-    """Prepare financial content and preserve its original text."""
 
     if not text or not text.strip():
         raise ValueError("Input text is empty.")

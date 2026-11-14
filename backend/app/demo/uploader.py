@@ -7,6 +7,7 @@ real financial text instead of only the bundled seed files.
 
 from __future__ import annotations
 
+from fastapi import UploadFile, File, Form
 import csv
 import io
 import os
@@ -17,8 +18,6 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-import fitz  # PyMuPDF (optional, only for PDF extraction)
 
 from ..config import BASE_DIR
 from ..api.demo import router
@@ -346,12 +345,13 @@ def _ingest_xlsx(path: Path) -> tuple[int, list[dict[str, Any]]]:
 
 
 def _ingest_pdf(path: Path) -> tuple[int, list[dict[str, Any]]]:
-    language = None
+    try:
+        import fitz
+    except Exception:
+        return 0, []
     try:
         doc = fitz.open(str(path))
-        text_parts = []
-        for page in doc:
-            text_parts.append(page.get_text())
+        text_parts = [page.get_text() for page in doc]
         text = "\n".join(text_parts)
     except Exception:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -365,7 +365,7 @@ def _ingest_pdf(path: Path) -> tuple[int, list[dict[str, Any]]]:
             "title": chunk[:200],
             "summary": chunk,
             "text": chunk,
-            "language": language or "en",
+            "language": None,
             "source": "upload",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "confidence": None,

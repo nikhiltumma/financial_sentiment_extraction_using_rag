@@ -1,21 +1,26 @@
-
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel, Field
 from typing import Literal
-
-from app.services.kg_retriever import KGRetriever
 
 from app.services.preprocessing import (
     process_financial_content,
     process_uploaded_file,
 )
 
-from app.services.kg_reasoner import (
-    check_evidence_sufficiency,
-    classify_financial_sentiment,
-    classify_with_fallback,
-    answer_financial_question
-)
+try:
+    from app.services.kg_retriever import KGRetriever
+    from app.services.kg_reasoner import (
+        check_evidence_sufficiency,
+        classify_financial_sentiment,
+        classify_with_fallback,
+        answer_financial_question,
+    )
+except Exception:
+    KGRetriever = None
+    check_evidence_sufficiency = None
+    classify_financial_sentiment = None
+    classify_with_fallback = None
+    answer_financial_question = None
 
 
 router = APIRouter(prefix="/analysis", tags=["Analysis"])
@@ -86,14 +91,22 @@ class FinancialQueryRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
 
 
-# Reuse the embedding model and FAISS index
-retriever = KGRetriever()
+# Retriever is created lazily when /query is first called, so the app boots
+# without faiss / sentence-transformers / Ollama.
+def get_retriever():
+    if KGRetriever is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Knowledge Graph retrieval is not configured (FAISS / embedding model unavailable)."
+        )
+    return KGRetriever()
 
 
 @router.post("/query")
 def analyze_financial_query(request: FinancialQueryRequest):
-
     try:
+        retriever = get_retriever()
+
         # 1. Retrieve relevant graph evidence
         initial_evidence = retriever.search(
             query=request.query,
@@ -121,7 +134,7 @@ def analyze_financial_query(request: FinancialQueryRequest):
         answer_result = None
 
         # 4. Generate a direct answer and classify sentiment
-        if sufficiency["sufficient"]:
+        if sufficiency.get("sufficient", False):
 
             # Direct question answering
             answer_result = answer_financial_question(

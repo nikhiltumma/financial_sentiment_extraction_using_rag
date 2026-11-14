@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import requests
 
 from app.api.demo import router as demo_router
+from app.api.live_data import router as live_data_router
 from app.config import OLLAMA_BASE_URL, OLLAMA_MODEL
 
 # The analysis and graph routes need FAISS, SentenceTransformers and a local
@@ -23,6 +24,7 @@ app = FastAPI(
 )
 
 app.include_router(demo_router)
+app.include_router(live_data_router)
 
 if analysis_router is not None:
     app.include_router(analysis_router)

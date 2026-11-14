@@ -2,10 +2,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-import faiss
-import numpy as np
-from sentence_transformers import SentenceTransformer
+import importlib
+import json
+from pathlib import Path
+from typing import Any
 
+faiss = None
+numpy = None
+SentenceTransformer = None
 
 # Project paths
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -21,7 +25,11 @@ class KGRetriever:
 
     def __init__(self):
         print("Loading multilingual embedding model...")
+        import numpy as _np
+        import faiss
+        from sentence_transformers import SentenceTransformer
         self.model = SentenceTransformer(MODEL_NAME)
+        self.index = faiss.IndexFlatIP(self.model.encode(["placeholder"])[0].shape[0])
         self.index = None
         self.evidence = []
 
@@ -172,6 +180,7 @@ class KGRetriever:
         self.index = faiss.IndexFlatIP(embeddings.shape[1])
         self.index.add(embeddings)
 
+_faiss = importlib.import_module('faiss')
         faiss.write_index(
             self.index,
             str(VECTOR_DIR / "financial_kg.index")
@@ -207,7 +216,8 @@ class KGRetriever:
                 "FAISS index not found. Build the index first."
             )
 
-        self.index = faiss.read_index(str(index_path))
+_faiss = importlib.import_module('faiss')
+        self.index = _faiss.read_index(str(index_path))
 
         with open(evidence_path, "r", encoding="utf-8") as file:
             self.evidence = json.load(file)
