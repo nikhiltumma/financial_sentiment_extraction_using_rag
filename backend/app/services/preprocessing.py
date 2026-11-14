@@ -16,6 +16,21 @@ SUPPORTED_LANGUAGES = {
     "en": "English",
     "hi": "Hindi",
     "te": "Telugu",
+    "bn": "Bengali",
+    "ta": "Tamil",
+    "mr": "Marathi",
+    "gu": "Gujarati",
+    "kn": "Kannada",
+    "ml": "Malayalam",
+    "ur": "Urdu",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "ar": "Arabic",
+    "pt": "Portuguese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "zh": "Chinese",
 }
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".csv"}
